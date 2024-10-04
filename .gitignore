@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+*.s
 
 # Object files
 *.o
@@ -35,6 +36,8 @@
 *.i*86
 *.x86_64
 *.hex
+*.prg 
+*.d64
 
 # Debug files
 *.dSYM/
