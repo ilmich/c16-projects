@@ -1,3 +1,4 @@
+#include <peekpoke.h>
 #include <string.h>
 #include <conio.h>
 #include <stdlib.h>
@@ -452,7 +453,6 @@ int runOpcode(void)
 			CHIP8.v[vx] = CHIP8.v[vx] << 1;
 			break;
 		default:
-			cprintf("unknow 80 0x%x%x|", word_hi, word_lo);
 			break;
 		}
 		break;
@@ -464,6 +464,10 @@ int runOpcode(void)
 	case 0xA0:
 		addr = (((word_hi & 0x0f) * 256) + word_lo);
 		CHIP8.i = addr;
+		break;
+	case 0xB0:
+		addr = (((word_hi & 0x0f) * 256) + word_lo);
+		CHIP8.pc = addr + CHIP8.v[0];
 		break;
 	case 0xC0:
 		CHIP8.v[vx] = rand_8bit() & word_lo;
@@ -528,8 +532,8 @@ int runOpcode(void)
 		case 0x07:
 			CHIP8.v[vx] = CHIP8.delay_timer;
 			break;
-		case 0x1e:
-			CHIP8.i = CHIP8.i + CHIP8.v[vx];
+		case 0x0A:
+			CHIP8.v[vx] = scancode_to_chip8(1);
 			break;
 		case 0x15:
 			CHIP8.delay_timer = CHIP8.v[vx];
@@ -537,8 +541,16 @@ int runOpcode(void)
 		case 0x18:
 			CHIP8.sound_timer = CHIP8.v[vx];
 			break;
+		case 0x1e:
+			CHIP8.i = CHIP8.i + CHIP8.v[vx];
+			break;
 		case 0x29:
 			CHIP8.i = 256 + (CHIP8.v[vx] * 5);
+			break;
+		case 0x33:
+			CHIP8_RAW.memory[CHIP8.i] = CHIP8.v[vx] / 100;
+			CHIP8_RAW.memory[CHIP8.i + 1] = CHIP8.v[vx] / 10;
+			CHIP8_RAW.memory[CHIP8.i + 2] = CHIP8.v[vx] % 10;
 			break;
 		case 0x55:
 			x = 0;
@@ -556,17 +568,11 @@ int runOpcode(void)
 				++x;
 			} while (x <= vx);
 			break;
-		case 0x0A:
-			CHIP8.v[vx] = scancode_to_chip8(1);
-			break;
 		default:
-			cprintf("unknow f0 0x%x --> 0x%x%x|", CHIP8.pc, word_hi,
-				word_lo);
 			break;
 		}
 		break;
 	default:
-		cprintf("unknow 0x%x%x|", word_hi, word_lo);
 		break;
 	}
 
@@ -580,6 +586,9 @@ void raster_routine(void)
 	asm("sta $ff09");
 	if (CHIP8.delay_timer > 0) {
 		--CHIP8.delay_timer;
+	}
+	if (CHIP8.sound_timer > 0) {
+		--CHIP8.sound_timer;
 	}
 	CHIP8.key_pressed = scancode_to_chip8(0);
 	++frames;
